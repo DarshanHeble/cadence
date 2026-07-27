@@ -1,56 +1,108 @@
-# Cadence (Rust)
+# ⏱️ Cadence (`cad`)
 
-> **Automated Git progress pacing tool written in Rust.**
-> Keep committing naturally during development. Tag commits with scheduled release dates. Pushes commits on the right day automatically whenever you open the tool or run Cadence commands.
-
----
-
-## ⚡ Key Features (Rust Edition)
-
-- **Single Standalone Executable**: Native high-performance `cad` and `cadence` binaries compiled in Rust (~5ms startup).
-- **Zero Background Daemons**: No clock or background thread running between sessions.
-- **Ratatui Terminal UI**: Interactive terminal dashboard supporting tabs, keyboard shortcuts (`1-4`, `p`, `r`, `q`), and progress timeline rendering.
-- **Git Passthrough**: Subcommands like `cad status`, `cad push`, `cad relabel`, `cad log`, `cad init`, plus native passthrough to `git` (`cad diff`, `cad checkout`).
+> **Automated Git progress-pacing system written in Rust.**
+> Develop naturally at your own pace during single-session bursts. Tag commits with scheduled release dates. Cadence automatically advances `origin/main` on the right day whenever you open the tool, with zero background daemons.
 
 ---
 
-## 💡 How Cadence Works
-
-Git commits form a linear pointer chain. A remote branch (like `origin/main`) is simply a pointer pointing to a commit object in that chain. 
-
-When Cadence runs a **Push Check**:
-1. It queries `origin/main` to find the last pushed commit object hash.
-2. It walks forward through all unpushed local commits.
-3. It parses the `Release-Date: YYYY-MM-DD` trailer embedded inside each commit message.
-4. It finds the highest commit whose `Release-Date` is **today or earlier**.
-5. It advances `origin/main` to that target commit hash.
+![Cadence Dashboard Banner](docs/assets/cadence_dashboard_preview.png)
 
 ---
 
-## 🚀 Quickstart & Commands
+## 📸 Recommended Screenshots & Visual Assets to Include
 
+Add the following screenshot files into `docs/assets/` to make your GitHub repository README look top-tier:
+
+1. **`cadence_dashboard_preview.png`**: A screenshot of the Ratatui TUI dashboard open on the **Timeline tab** showing pushed (filled green block) vs pending vs scheduled commits.
+2. **`cadence_status_preview.png`**: Screenshot of running `cad status` in your terminal demonstrating the summary counts.
+3. **`cadence_commit_preview.png`**: Screenshot of running `cad commit "My commit"` showing automatic trailer addition.
+
+---
+
+## ⚡ Key Highlights
+
+- **⚡ Blazing Fast (~5ms Startup)**: Written in pure Rust with Ratatui & Crossterm.
+- **🛡️ Zero Background Daemons**: No background service or scheduled clock task required. Pushing happens synchronously when you launch the tool.
+- **🏷️ Permanent Metadata**: Uses `Release-Date: YYYY-MM-DD` Git trailers embedded inside commit message bodies.
+- **🖥️ Interactive TUI Dashboard**: Full terminal dashboard with keyboard shortcuts (`1-4`, `p`, `r`, `q`).
+- **🔀 Git CLI Passthrough**: Functions as a wrapper around Git commands (`cad diff`, `cad checkout`, `cad log`).
+
+---
+
+## 📦 Installation
+
+### Option 1: Cargo Install
 ```bash
-# Build release binary
-cargo build --release
-
-# Install executables locally (~/.cargo/bin/cad and cadence)
 cargo install --path .
-
-# CLI Commands
-cad init                              # Initialize repository config
-cad commit "Implement feature"       # Stage & commit with Release-Date: <today>
-cad commit "Future work" --date 2026-08-05
-cad status                            # View status summary
-cad push                              # Execute manual push check
-cad relabel HEAD 2026-08-01           # Modify release date trailer
-cad log                               # View push history log
-cad                                   # Launch interactive TUI Dashboard
 ```
 
+### Option 2: Build from Source
+```bash
+git clone https://github.com/DarshanHeble/cadence.git
+cd cadence
+cargo build --release
+```
+The compiled binaries will be located at `target/release/cad` and `target/release/cadence`.
+
 ---
 
-## ⚙️ Configuration Dotfiles
+## 🚀 Quickstart & Workflow
 
-- **`.cadence.json`**: Repository settings (`repo_path`, `remote`, `branch`, `timezone`).
-- **`.cadence_log.json`**: Audit history log of pushes.
-- **`.cadence_guide.md`**: Automatically generated developer & AI instructions guide.
+### 1. Initialize in Your Repository
+```bash
+cad init
+```
+This interactively generates:
+- `.cadence.json`: Repo settings (remote, branch, timezone).
+- `.cadence_guide.md`: Quick reference guide for AI agents and human developers.
+
+### 2. Make Paced Commits
+```bash
+# Stage changes & commit with today's Release-Date trailer
+cad commit "Add user authentication module"
+
+# Pre-label a commit for a future date
+cad commit "Refactor database models" --date 2026-08-05
+```
+
+### 3. Check Status & Logs
+```bash
+cad status                            # View summary breakdown
+cad push                              # Execute manual push check
+cad relabel HEAD 2026-08-01           # Fix/update trailer date on a commit
+cad log                               # View push history log
+```
+
+### 4. Interactive TUI Dashboard
+Simply run `cad` to execute startup push checks and open the dashboard:
+```bash
+cad
+```
+
+#### TUI Keyboard Shortcuts:
+- **`1`**: Timeline View
+- **`2`**: Today's Batch View
+- **`3`**: Push History Log View
+- **`4`**: Active Settings View
+- **`p`**: Trigger Push Recheck
+- **`r`**: Refresh Screen
+- **`q`**: Quit Dashboard
+
+---
+
+## 🤖 AI Assistant Guidelines
+
+When AI coding assistants (Antigravity, Copilot, Cursor, etc.) operate inside a Cadence repository, they should inspect `.cadence_guide.md` and use `cad commit "message"` instead of raw `git commit`.
+
+---
+
+## 🛠️ CI/CD & Development
+
+- **Formatting Check**: `cargo fmt --all -- --check`
+- **Linting**: `cargo clippy --all-targets -- -D warnings`
+- **Tests**: `cargo test --all`
+
+---
+
+## 📜 License
+Dual-licensed under MIT or Apache-2.0.
