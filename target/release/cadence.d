@@ -1,0 +1,1 @@
+/home/darshan/Projects/cadence/target/release/cadence: /home/darshan/Projects/cadence/src/config.rs /home/darshan/Projects/cadence/src/git.rs /home/darshan/Projects/cadence/src/lib.rs /home/darshan/Projects/cadence/src/main.rs /home/darshan/Projects/cadence/src/tui.rs
