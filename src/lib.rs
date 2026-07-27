@@ -6,12 +6,17 @@ use clap::{Parser, Subcommand};
 use std::io::{self, Write};
 use std::process::Command;
 
-use config::{append_push_log, load_config, load_push_log, save_config, Config, LogCommit, LogEntry};
+use config::{
+    append_push_log, load_config, load_push_log, save_config, Config, LogCommit, LogEntry,
+};
 use git::{get_all_commits, get_today_str, run_git, run_push_check};
 use tui::run_tui;
 
 #[derive(Parser)]
-#[command(name = "cadence", about = "Schedule git commits to appear as steady daily progress on GitHub")]
+#[command(
+    name = "cadence",
+    about = "Schedule git commits to appear as steady daily progress on GitHub"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -140,7 +145,8 @@ fn relabel_commit(commit_ref: &str, date_str: &str) {
     let msg = stdout.trim();
     let re = regex::Regex::new(r"(?i)Release-Date:\s*\d{4}-\d{2}-\d{2}").unwrap();
     let new_msg = if re.is_match(msg) {
-        re.replace(msg, format!("Release-Date: {}", date_str)).to_string()
+        re.replace(msg, format!("Release-Date: {}", date_str))
+            .to_string()
     } else {
         format!("{}\n\nRelease-Date: {}", msg, date_str)
     };
@@ -158,7 +164,10 @@ fn print_status() {
     let cfg = load_config();
     let today = get_today_str(&cfg.timezone);
     println!("Cadence Status for repository: {}", cfg.repo_path);
-    println!("Remote: {} | Branch: {} | Timezone: {} | Today: {}\n", cfg.remote, cfg.branch, cfg.timezone, today);
+    println!(
+        "Remote: {} | Branch: {} | Timezone: {} | Today: {}\n",
+        cfg.remote, cfg.branch, cfg.timezone, today
+    );
 
     let commits = get_all_commits(&cfg.repo_path, &cfg.remote, &cfg.branch);
     if commits.is_empty() {
@@ -167,15 +176,28 @@ fn print_status() {
     }
 
     let pushed_count = commits.iter().filter(|c| c.pushed).count();
-    let pending_count = commits.iter().filter(|c| !c.pushed && c.release_date.as_ref().map_or(false, |d| d <= &today)).count();
-    let scheduled_count = commits.iter().filter(|c| !c.pushed && c.release_date.as_ref().map_or(false, |d| d > &today)).count();
-    let unlabeled_count = commits.iter().filter(|c| !c.pushed && c.release_date.is_none()).count();
+    let pending_count = commits
+        .iter()
+        .filter(|c| !c.pushed && c.release_date.as_ref().is_some_and(|d| d <= &today))
+        .count();
+    let scheduled_count = commits
+        .iter()
+        .filter(|c| !c.pushed && c.release_date.as_ref().is_some_and(|d| d > &today))
+        .count();
+
+    let unlabeled_count = commits
+        .iter()
+        .filter(|c| !c.pushed && c.release_date.is_none())
+        .count();
 
     println!("Pushed commits:          {}", pushed_count);
     println!("Pending due commits:     {}", pending_count);
     println!("Scheduled future commits: {}", scheduled_count);
     if unlabeled_count > 0 {
-        println!("\x1b[91m⚠️ Unlabeled commits:    {} (queue blocked until labeled!)\x1b[0m", unlabeled_count);
+        println!(
+            "\x1b[91m⚠️ Unlabeled commits:    {} (queue blocked until labeled!)\x1b[0m",
+            unlabeled_count
+        );
     }
     println!();
 }
@@ -212,11 +234,15 @@ pub fn entry() {
                     timestamp: chrono::Local::now().to_rfc3339(),
                     message: res.message.clone(),
                     count: res.count,
-                    commits: res.pushed_commits.iter().map(|c| LogCommit {
-                        short_hash: c.short_hash.clone(),
-                        subject: c.subject.clone(),
-                        release_date: c.release_date.clone().unwrap_or_default(),
-                    }).collect(),
+                    commits: res
+                        .pushed_commits
+                        .iter()
+                        .map(|c| LogCommit {
+                            short_hash: c.short_hash.clone(),
+                            subject: c.subject.clone(),
+                            release_date: c.release_date.clone().unwrap_or_default(),
+                        })
+                        .collect(),
                 };
                 append_push_log(entry);
             }
@@ -231,11 +257,15 @@ pub fn entry() {
                     timestamp: chrono::Local::now().to_rfc3339(),
                     message: res.message.clone(),
                     count: res.count,
-                    commits: res.pushed_commits.iter().map(|c| LogCommit {
-                        short_hash: c.short_hash.clone(),
-                        subject: c.subject.clone(),
-                        release_date: c.release_date.clone().unwrap_or_default(),
-                    }).collect(),
+                    commits: res
+                        .pushed_commits
+                        .iter()
+                        .map(|c| LogCommit {
+                            short_hash: c.short_hash.clone(),
+                            subject: c.subject.clone(),
+                            release_date: c.release_date.clone().unwrap_or_default(),
+                        })
+                        .collect(),
                 };
                 append_push_log(entry);
             }

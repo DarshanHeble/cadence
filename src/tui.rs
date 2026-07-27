@@ -1,3 +1,4 @@
+use crate::config::{append_push_log, load_config, load_push_log, LogCommit, LogEntry};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -12,7 +13,6 @@ use ratatui::{
     Terminal,
 };
 use std::io;
-use crate::config::{load_config, load_push_log, append_push_log, LogCommit, LogEntry};
 
 use crate::git::{get_all_commits, get_today_str, run_push_check, PushCheckResult};
 
@@ -23,7 +23,6 @@ enum TabIndex {
     Log = 2,
     Settings = 3,
 }
-
 
 pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::error::Error>> {
     enable_raw_mode()?;
@@ -192,11 +191,15 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
                                 timestamp: chrono::Local::now().to_rfc3339(),
                                 message: res.message.clone(),
                                 count: res.count,
-                                commits: res.pushed_commits.iter().map(|c| LogCommit {
-                                    short_hash: c.short_hash.clone(),
-                                    subject: c.subject.clone(),
-                                    release_date: c.release_date.clone().unwrap_or_default(),
-                                }).collect(),
+                                commits: res
+                                    .pushed_commits
+                                    .iter()
+                                    .map(|c| LogCommit {
+                                        short_hash: c.short_hash.clone(),
+                                        subject: c.subject.clone(),
+                                        release_date: c.release_date.clone().unwrap_or_default(),
+                                    })
+                                    .collect(),
                             };
                             append_push_log(entry);
                         }
@@ -213,7 +216,11 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
     }
 
     disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
     terminal.show_cursor()?;
     Ok(())
 }

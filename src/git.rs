@@ -1,8 +1,8 @@
+use crate::config::load_config;
 use chrono::Local;
 use chrono_tz::Tz;
 use regex::Regex;
 use std::process::Command;
-use crate::config::{load_config, LogCommit, LogEntry, append_push_log};
 
 #[derive(Debug, Clone)]
 pub struct CommitInfo {
@@ -33,10 +33,7 @@ pub fn get_today_str(tz_name: &str) -> String {
 }
 
 pub fn run_git(args: &[&str], cwd: &str) -> (i32, String, String) {
-    let output = Command::new("git")
-        .args(args)
-        .current_dir(cwd)
-        .output();
+    let output = Command::new("git").args(args).current_dir(cwd).output();
 
     match output {
         Ok(out) => {
@@ -57,7 +54,11 @@ pub fn parse_release_date(text: &str) -> Option<String> {
 pub fn get_all_commits(cwd: &str, remote: &str, branch: &str) -> Vec<CommitInfo> {
     let _ = run_git(&["fetch", "-q", remote], cwd);
     let (code, remote_head, _) = run_git(&["rev-parse", &format!("{}/{}", remote, branch)], cwd);
-    let remote_head = if code == 0 { remote_head } else { String::new() };
+    let remote_head = if code == 0 {
+        remote_head
+    } else {
+        String::new()
+    };
 
     let fmt = "%H%x1f%s%x1f%b%x1e";
     let (code, stdout, _) = run_git(&["log", "--reverse", &format!("--format={}", fmt)], cwd);
@@ -74,12 +75,17 @@ pub fn get_all_commits(cwd: &str, remote: &str, branch: &str) -> Vec<CommitInfo>
             continue;
         }
         let parts: Vec<&str> = raw.split('\x1f').collect();
-        let commit_hash = parts.get(0).unwrap_or(&"").to_string();
+        let commit_hash = parts.first().unwrap_or(&"").to_string();
+
         let subject = parts.get(1).unwrap_or(&"").to_string();
         let body = parts.get(2).unwrap_or(&"").to_string();
 
         let rel_date = parse_release_date(&body).or_else(|| parse_release_date(&subject));
-        let short_hash = if commit_hash.len() >= 7 { commit_hash[..7].to_string() } else { commit_hash.clone() };
+        let short_hash = if commit_hash.len() >= 7 {
+            commit_hash[..7].to_string()
+        } else {
+            commit_hash.clone()
+        };
 
         commits.push(CommitInfo {
             hash: commit_hash.clone(),
@@ -106,7 +112,11 @@ pub fn run_push_check() -> PushCheckResult {
 
     let _ = run_git(&["fetch", "-q", remote], cwd);
     let (code, remote_head, _) = run_git(&["rev-parse", &format!("{}/{}", remote, branch)], cwd);
-    let remote_head = if code == 0 { remote_head } else { String::new() };
+    let remote_head = if code == 0 {
+        remote_head
+    } else {
+        String::new()
+    };
 
     let rev_range = if !remote_head.is_empty() {
         format!("{}..HEAD", remote_head)
@@ -115,7 +125,10 @@ pub fn run_push_check() -> PushCheckResult {
     };
 
     let fmt = "%H%x1f%s%x1f%b%x1e";
-    let (code, stdout, _) = run_git(&["log", "--reverse", &format!("--format={}", fmt), &rev_range], cwd);
+    let (code, stdout, _) = run_git(
+        &["log", "--reverse", &format!("--format={}", fmt), &rev_range],
+        cwd,
+    );
 
     if code != 0 || stdout.is_empty() {
         return PushCheckResult {
@@ -135,11 +148,16 @@ pub fn run_push_check() -> PushCheckResult {
             continue;
         }
         let parts: Vec<&str> = raw.split('\x1f').collect();
-        let commit_hash = parts.get(0).unwrap_or(&"").to_string();
+        let commit_hash = parts.first().unwrap_or(&"").to_string();
+
         let subject = parts.get(1).unwrap_or(&"").to_string();
         let body = parts.get(2).unwrap_or(&"").to_string();
         let rel_date = parse_release_date(&body).or_else(|| parse_release_date(&subject));
-        let short_hash = if commit_hash.len() >= 7 { commit_hash[..7].to_string() } else { commit_hash.clone() };
+        let short_hash = if commit_hash.len() >= 7 {
+            commit_hash[..7].to_string()
+        } else {
+            commit_hash.clone()
+        };
 
         pending.push(CommitInfo {
             hash: commit_hash,
@@ -170,9 +188,17 @@ pub fn run_push_check() -> PushCheckResult {
     }
 
     if let Some(t) = target {
-        let (push_code, _, push_err) = run_git(&["push", remote, &format!("{}:refs/heads/{}", t.hash, branch)], cwd);
+        let (push_code, _, push_err) = run_git(
+            &["push", remote, &format!("{}:refs/heads/{}", t.hash, branch)],
+            cwd,
+        );
         if push_code == 0 {
-            let msg = format!("Successfully pushed {} commit(s) up to {} ({}).", pushed_commits.len(), t.short_hash, t.release_date.unwrap_or_default());
+            let msg = format!(
+                "Successfully pushed {} commit(s) up to {} ({}).",
+                pushed_commits.len(),
+                t.short_hash,
+                t.release_date.unwrap_or_default()
+            );
             PushCheckResult {
                 pushed: true,
                 count: pushed_commits.len(),

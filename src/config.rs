@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
 
 pub const CONFIG_FILE: &str = ".cadence.json";
 pub const PUSH_LOG_FILE: &str = ".cadence_log.json";
