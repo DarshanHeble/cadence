@@ -3,8 +3,9 @@ import os
 from pathlib import Path
 from typing import Dict, Any
 
-CONFIG_FILE = "config.json"
-PUSH_LOG_FILE = "push_log.json"
+CONFIG_FILE = ".cadence.json"
+PUSH_LOG_FILE = ".cadence_log.json"
+
 
 DEFAULT_CONFIG = {
     "repo_path": ".",

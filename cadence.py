@@ -135,7 +135,8 @@ def init_repo():
     }
     save_config(cfg)
     print("Cadence initialized successfully!")
-    print(f"Created config.json: {cfg}")
+    print(f"Created .cadence.json: {cfg}")
+
 
 def print_status():
     cfg = load_config()
