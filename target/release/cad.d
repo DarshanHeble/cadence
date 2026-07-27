@@ -1,1 +1,0 @@
-/home/darshan/Projects/cadence/target/release/cad: /home/darshan/Projects/cadence/src/bin/cad.rs /home/darshan/Projects/cadence/src/config.rs /home/darshan/Projects/cadence/src/git.rs /home/darshan/Projects/cadence/src/lib.rs /home/darshan/Projects/cadence/src/tui.rs
