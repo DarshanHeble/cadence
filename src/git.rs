@@ -1,10 +1,16 @@
+//! Git Command & Commit Pacing Engine
+//!
+//! Encapsulates Git CLI interactions, log parsing, release-date trailer extraction,
+//! and automated linear branch pointer advancement logic.
+
 use crate::config::load_config;
 use chrono::Local;
 use chrono_tz::Tz;
 use regex::Regex;
 use std::process::Command;
 
-#[derive(Debug, Clone)]
+/// Struct containing commit information parsed from `git log`
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitInfo {
     pub hash: String,
     pub short_hash: String,
@@ -13,7 +19,8 @@ pub struct CommitInfo {
     pub pushed: bool,
 }
 
-#[derive(Debug, Clone)]
+/// Result returned from executing a Cadence push decision check
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PushCheckResult {
     pub pushed: bool,
     pub count: usize,
@@ -23,37 +30,42 @@ pub struct PushCheckResult {
     pub unlabeled_found: bool,
 }
 
+/// Returns today's date formatted as YYYY-MM-DD in the specified timezone
 pub fn get_today_str(tz_name: &str) -> String {
     if let Ok(tz) = tz_name.parse::<Tz>() {
-        let now = Local::now().with_timezone(&tz);
-        now.format("%Y-%m-%d").to_string()
+        Local::now()
+            .with_timezone(&tz)
+            .format("%Y-%m-%d")
+            .to_string()
     } else {
         Local::now().format("%Y-%m-%d").to_string()
     }
 }
 
+/// Helper function to execute git commands synchronously
 pub fn run_git(args: &[&str], cwd: &str) -> (i32, String, String) {
-    let output = Command::new("git").args(args).current_dir(cwd).output();
-
-    match output {
-        Ok(out) => {
+    Command::new("git")
+        .args(args)
+        .current_dir(cwd)
+        .output()
+        .map(|out| {
             let code = out.status.code().unwrap_or(-1);
             let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
             let stderr = String::from_utf8_lossy(&out.stderr).trim().to_string();
             (code, stdout, stderr)
-        }
-        Err(e) => (-1, "".to_string(), e.to_string()),
-    }
+        })
+        .unwrap_or_else(|e| (-1, String::new(), e.to_string()))
 }
 
+/// Parses the `Release-Date: YYYY-MM-DD` trailer from commit body or subject
 pub fn parse_release_date(text: &str) -> Option<String> {
     let re = Regex::new(r"(?i)Release-Date:\s*(\d{4}-\d{2}-\d{2})").ok()?;
     re.captures(text).map(|cap| cap[1].to_string())
 }
 
+/// Fetches all repository commits and marks pushed vs pending state
 pub fn get_all_commits(cwd: &str, remote: &str, branch: &str) -> Vec<CommitInfo> {
     let (code, remote_head, _) = run_git(&["rev-parse", &format!("{}/{}", remote, branch)], cwd);
-
     let remote_head = if code == 0 {
         remote_head
     } else {
@@ -76,7 +88,6 @@ pub fn get_all_commits(cwd: &str, remote: &str, branch: &str) -> Vec<CommitInfo>
         }
         let parts: Vec<&str> = raw.split('\x1f').collect();
         let commit_hash = parts.first().unwrap_or(&"").to_string();
-
         let subject = parts.get(1).unwrap_or(&"").to_string();
         let body = parts.get(2).unwrap_or(&"").to_string();
 
@@ -103,6 +114,11 @@ pub fn get_all_commits(cwd: &str, remote: &str, branch: &str) -> Vec<CommitInfo>
     commits
 }
 
+/// Executes the core Cadence push check decision algorithm:
+/// 1. Finds remote branch head object pointer
+/// 2. Iterates forward through unpushed commits
+/// 3. Validates `Release-Date` trailers up to today's date
+/// 4. Moves remote pointer forward to eligible target commit if found
 pub fn run_push_check(skip_fetch: bool) -> PushCheckResult {
     let cfg = load_config();
     let cwd = &cfg.repo_path;
@@ -152,7 +168,6 @@ pub fn run_push_check(skip_fetch: bool) -> PushCheckResult {
         }
         let parts: Vec<&str> = raw.split('\x1f').collect();
         let commit_hash = parts.first().unwrap_or(&"").to_string();
-
         let subject = parts.get(1).unwrap_or(&"").to_string();
         let body = parts.get(2).unwrap_or(&"").to_string();
         let rel_date = parse_release_date(&body).or_else(|| parse_release_date(&subject));
@@ -178,7 +193,7 @@ pub fn run_push_check(skip_fetch: bool) -> PushCheckResult {
     for commit in pending {
         if commit.release_date.is_none() {
             unlabeled_found = true;
-            break; // Stop at unlabeled commit
+            break; // Stop at unlabeled commit to prevent chronological misordering
         }
 
         let date = commit.release_date.as_ref().unwrap();
@@ -186,7 +201,7 @@ pub fn run_push_check(skip_fetch: bool) -> PushCheckResult {
             target = Some(commit.clone());
             pushed_commits.push(commit);
         } else {
-            break; // Future-dated commit, stop
+            break; // Stop at first future-dated commit
         }
     }
 

@@ -1,14 +1,25 @@
+//! Configuration and Push Audit Log Manager
+//!
+//! Handles persistent storage for repository settings (`.cadence.json`)
+//! and push history logs (`.cadence_log.json`).
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+/// Project dotfile paths
 pub const CONFIG_FILE: &str = ".cadence.json";
 pub const PUSH_LOG_FILE: &str = ".cadence_log.json";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Cadence repository configuration settings
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Config {
+    /// Target repository path (defaults to ".")
     pub repo_path: String,
+    /// Target Git remote (e.g. "origin")
     pub remote: String,
+    /// Target release branch (e.g. "main")
     pub branch: String,
+    /// Configured timezone for "today" calculation (e.g. "Asia/Kolkata")
     pub timezone: String,
 }
 
@@ -23,14 +34,16 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Metadata summary of a committed item in the push log
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct LogCommit {
     pub short_hash: String,
     pub subject: String,
     pub release_date: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Entry representing a single push execution event
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct LogEntry {
     pub timestamp: String,
     pub message: String,
@@ -38,29 +51,29 @@ pub struct LogEntry {
     pub commits: Vec<LogCommit>,
 }
 
+/// Loads repository configuration from `.cadence.json` or returns default settings
 pub fn load_config() -> Config {
-    if let Ok(content) = fs::read_to_string(CONFIG_FILE) {
-        if let Ok(cfg) = serde_json::from_str(&content) {
-            return cfg;
-        }
-    }
-    Config::default()
+    fs::read_to_string(CONFIG_FILE)
+        .ok()
+        .and_then(|content| serde_json::from_str(&content).ok())
+        .unwrap_or_default()
 }
 
+/// Saves repository configuration into `.cadence.json`
 pub fn save_config(config: &Config) -> std::io::Result<()> {
     let content = serde_json::to_string_pretty(config)?;
     fs::write(CONFIG_FILE, content)
 }
 
+/// Loads push history from `.cadence_log.json`
 pub fn load_push_log() -> Vec<LogEntry> {
-    if let Ok(content) = fs::read_to_string(PUSH_LOG_FILE) {
-        if let Ok(logs) = serde_json::from_str(&content) {
-            return logs;
-        }
-    }
-    Vec::new()
+    fs::read_to_string(PUSH_LOG_FILE)
+        .ok()
+        .and_then(|content| serde_json::from_str(&content).ok())
+        .unwrap_or_default()
 }
 
+/// Appends a new push execution record to `.cadence_log.json`
 pub fn append_push_log(entry: LogEntry) {
     let mut logs = load_push_log();
     logs.push(entry);
