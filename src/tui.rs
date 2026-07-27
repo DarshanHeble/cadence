@@ -181,56 +181,51 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
 
         if event::poll(std::time::Duration::from_millis(50))? {
             if let Event::Key(key) = event::read()? {
-                if key.kind == crossterm::event::KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => break,
-                        KeyCode::Char('1') => current_tab = TabIndex::Timeline,
-                        KeyCode::Char('2') => current_tab = TabIndex::Batch,
-                        KeyCode::Char('3') => current_tab = TabIndex::Log,
-                        KeyCode::Char('4') => current_tab = TabIndex::Settings,
-                        KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => {
-                            current_tab = match current_tab {
-                                TabIndex::Timeline => TabIndex::Batch,
-                                TabIndex::Batch => TabIndex::Log,
-                                TabIndex::Log => TabIndex::Settings,
-                                TabIndex::Settings => TabIndex::Timeline,
-                            };
-                        }
-                        KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => {
-                            current_tab = match current_tab {
-                                TabIndex::Timeline => TabIndex::Settings,
-                                TabIndex::Batch => TabIndex::Timeline,
-                                TabIndex::Log => TabIndex::Batch,
-                                TabIndex::Settings => TabIndex::Log,
-                            };
-                        }
-                        KeyCode::Char('p') | KeyCode::Char('P') => {
-                            let res = run_push_check();
-                            if res.pushed {
-                                let entry = LogEntry {
-                                    timestamp: chrono::Local::now().to_rfc3339(),
-                                    message: res.message.clone(),
-                                    count: res.count,
-                                    commits: res
-                                        .pushed_commits
-                                        .iter()
-                                        .map(|c| LogCommit {
-                                            short_hash: c.short_hash.clone(),
-                                            subject: c.subject.clone(),
-                                            release_date: c
-                                                .release_date
-                                                .clone()
-                                                .unwrap_or_default(),
-                                        })
-                                        .collect(),
-                                };
-                                append_push_log(entry);
-                            }
-                            push_result = res;
-                            current_tab = TabIndex::Batch;
-                        }
-                        _ => {}
+                match key.code {
+                    KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => break,
+                    KeyCode::Char('1') => current_tab = TabIndex::Timeline,
+                    KeyCode::Char('2') => current_tab = TabIndex::Batch,
+                    KeyCode::Char('3') => current_tab = TabIndex::Log,
+                    KeyCode::Char('4') => current_tab = TabIndex::Settings,
+                    KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => {
+                        current_tab = match current_tab {
+                            TabIndex::Timeline => TabIndex::Batch,
+                            TabIndex::Batch => TabIndex::Log,
+                            TabIndex::Log => TabIndex::Settings,
+                            TabIndex::Settings => TabIndex::Timeline,
+                        };
                     }
+                    KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => {
+                        current_tab = match current_tab {
+                            TabIndex::Timeline => TabIndex::Settings,
+                            TabIndex::Batch => TabIndex::Timeline,
+                            TabIndex::Log => TabIndex::Batch,
+                            TabIndex::Settings => TabIndex::Log,
+                        };
+                    }
+                    KeyCode::Char('p') | KeyCode::Char('P') => {
+                        let res = run_push_check();
+                        if res.pushed {
+                            let entry = LogEntry {
+                                timestamp: chrono::Local::now().to_rfc3339(),
+                                message: res.message.clone(),
+                                count: res.count,
+                                commits: res
+                                    .pushed_commits
+                                    .iter()
+                                    .map(|c| LogCommit {
+                                        short_hash: c.short_hash.clone(),
+                                        subject: c.subject.clone(),
+                                        release_date: c.release_date.clone().unwrap_or_default(),
+                                    })
+                                    .collect(),
+                            };
+                            append_push_log(entry);
+                        }
+                        push_result = res;
+                        current_tab = TabIndex::Batch;
+                    }
+                    _ => {}
                 }
             }
         }
