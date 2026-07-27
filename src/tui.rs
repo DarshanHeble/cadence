@@ -284,7 +284,7 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
                         cached_commits = get_all_commits(&cfg.repo_path, &cfg.remote, &cfg.branch);
                     }
                     KeyCode::Char('p') | KeyCode::Char('P') => {
-                        let res = run_push_check();
+                        let res = run_push_check(false);
                         if res.pushed {
                             let entry = LogEntry {
                                 timestamp: chrono::Local::now().to_rfc3339(),

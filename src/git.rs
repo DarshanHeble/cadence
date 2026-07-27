@@ -52,8 +52,8 @@ pub fn parse_release_date(text: &str) -> Option<String> {
 }
 
 pub fn get_all_commits(cwd: &str, remote: &str, branch: &str) -> Vec<CommitInfo> {
-    let _ = run_git(&["fetch", "-q", remote], cwd);
     let (code, remote_head, _) = run_git(&["rev-parse", &format!("{}/{}", remote, branch)], cwd);
+
     let remote_head = if code == 0 {
         remote_head
     } else {
@@ -103,14 +103,17 @@ pub fn get_all_commits(cwd: &str, remote: &str, branch: &str) -> Vec<CommitInfo>
     commits
 }
 
-pub fn run_push_check() -> PushCheckResult {
+pub fn run_push_check(skip_fetch: bool) -> PushCheckResult {
     let cfg = load_config();
     let cwd = &cfg.repo_path;
     let remote = &cfg.remote;
     let branch = &cfg.branch;
     let today = get_today_str(&cfg.timezone);
 
-    let _ = run_git(&["fetch", "-q", remote], cwd);
+    if !skip_fetch {
+        let _ = run_git(&["fetch", "-q", remote], cwd);
+    }
+
     let (code, remote_head, _) = run_git(&["rev-parse", &format!("{}/{}", remote, branch)], cwd);
     let remote_head = if code == 0 {
         remote_head

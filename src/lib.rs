@@ -227,7 +227,7 @@ pub fn entry() {
         Some(Commands::Status) => print_status(),
         Some(Commands::Log) => print_log(),
         Some(Commands::Push) => {
-            let res = run_push_check();
+            let res = run_push_check(false);
             println!("{}", res.message);
             if res.pushed {
                 let entry = LogEntry {
@@ -251,7 +251,7 @@ pub fn entry() {
             let _ = Command::new("git").args(&args).status();
         }
         None => {
-            let res = run_push_check();
+            let res = run_push_check(true);
             if res.pushed {
                 let entry = LogEntry {
                     timestamp: chrono::Local::now().to_rfc3339(),
