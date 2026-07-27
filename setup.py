@@ -13,8 +13,10 @@ setup(
     entry_points={
         "console_scripts": [
             "cadence=cadence:main",
+            "cad=cadence:main",
         ],
     },
+
     python_requires=">=3.9",
 )
 

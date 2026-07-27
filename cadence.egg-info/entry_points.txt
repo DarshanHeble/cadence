@@ -1,2 +1,3 @@
 [console_scripts]
+cad = cadence:main
 cadence = cadence:main
