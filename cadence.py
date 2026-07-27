@@ -5,8 +5,10 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, TabbedContent, TabPane, Button, Static
 from textual.binding import Binding
 
-from push_check import run_push_check
-from config_manager import load_config, save_config, append_push_log, DEFAULT_CONFIG
+from push_check import run_push_check, get_today_str, get_all_commits
+
+from config_manager import load_config, save_config, append_push_log, load_push_log, DEFAULT_CONFIG
+
 from commit_helper import commit_with_date
 
 from ui.timeline_view import TimelineView
@@ -135,6 +137,45 @@ def init_repo():
     print("Cadence initialized successfully!")
     print(f"Created config.json: {cfg}")
 
+def print_status():
+    cfg = load_config()
+    cwd = cfg.get("repo_path", ".")
+    remote = cfg.get("remote", "origin")
+    branch = cfg.get("branch", "main")
+    tz_name = cfg.get("timezone", "Asia/Kolkata")
+    today = get_today_str(tz_name)
+
+    print(f"Cadence Status for repository: {cwd}")
+    print(f"Remote: {remote} | Branch: {branch} | Timezone: {tz_name} | Today: {today}\n")
+
+    commits = get_all_commits(cwd, remote, branch)
+    if not commits:
+        print("No commits found.")
+        return
+
+    pushed_count = sum(1 for c in commits if c["pushed"])
+    pending_count = sum(1 for c in commits if not c["pushed"] and c["release_date"] and c["release_date"] <= today)
+    scheduled_count = sum(1 for c in commits if not c["pushed"] and c["release_date"] and c["release_date"] > today)
+    unlabeled_count = sum(1 for c in commits if not c["pushed"] and not c["release_date"])
+
+    print(f"Pushed commits: {pushed_count}")
+    print(f"Pending due commits: {pending_count}")
+    print(f"Scheduled future commits: {scheduled_count}")
+    if unlabeled_count > 0:
+        print(f"\033[91m⚠️ Unlabeled commits: {unlabeled_count} (queue blocked until labeled!)\033[0m")
+    print()
+
+def print_log():
+    logs = load_push_log()
+    if not logs:
+        print("No push history recorded yet.")
+        return
+    print("=== Cadence Push History Log ===")
+    for entry in reversed(logs):
+        print(f"🚀 Push at {entry.get('timestamp', '')} - {entry.get('message', '')}")
+        for c in entry.get("commits", []):
+            print(f"   • {c.get('short_hash', '')} - {c.get('subject', '')} ({c.get('release_date', '')})")
+
 def main():
     if len(sys.argv) > 1:
         cmd = sys.argv[1]
@@ -142,13 +183,45 @@ def main():
             init_repo()
             return
         elif cmd == "commit":
-            # Delegate to commit helper
             from commit_helper import main as commit_main
-            sys.argv = sys.argv[1:] # Shift args
+            sys.argv = sys.argv[1:]
             commit_main()
             return
+        elif cmd == "relabel":
+            from commit_helper import relabel_commit
+            if len(sys.argv) < 3:
+                print("Usage: cadence relabel [commit_ref] YYYY-MM-DD")
+                print("Example: cadence relabel HEAD 2026-08-01")
+                return
+            ref = sys.argv[2] if len(sys.argv) > 3 else "HEAD"
+            d = sys.argv[3] if len(sys.argv) > 3 else sys.argv[2]
+            relabel_commit(ref, d)
+            return
+        elif cmd == "status":
+            print_status()
+            return
+        elif cmd == "log":
+            print_log()
+            return
+        elif cmd == "push":
+            res = run_push_check()
+            print(res.get("message"))
+            if res.get("pushed"):
+                entry = {
+                    "timestamp": datetime.datetime.now().isoformat(),
+                    "message": res.get("message"),
+                    "count": res.get("count"),
+                    "commits": res.get("pushed_commits", [])
+                }
+                append_push_log(entry)
+            return
+        elif cmd in ["add", "checkout", "branch", "diff", "fetch", "pull", "merge", "rebase", "reset"]:
+            # Passthrough git CLI commands
+            import subprocess
+            subprocess.run(["git"] + sys.argv[1:])
+            return
 
-    # Step 4.2 Push Check (runs on launch)
+    # Default launch behavior: run push check then open TUI
     push_res = run_push_check()
     if push_res.get("pushed"):
         entry = {
@@ -164,3 +237,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
