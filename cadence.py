@@ -134,8 +134,44 @@ def init_repo():
         "timezone": tz
     }
     save_config(cfg)
+
+    # Generate project-specific .cadence_guide.md for developers & AI agents
+    guide_content = """# Cadence Project Guide & Instructions
+
+This repository is managed by **Cadence** - an automated Git progress pacing system.
+
+## 🤖 Instructions for AI Coding Assistants & Developers
+
+When making commits in this project, **always use `cadence commit` instead of standard `git commit`**. 
+Cadence automatically attaches the required `Release-Date: YYYY-MM-DD` trailer to ensure steady progress pacing on GitHub.
+
+### 📌 Cadence CLI Commands Reference
+
+| Command | Usage & Purpose |
+|---|---|
+| `cadence commit "message"` | Stage files & create a commit labeled with **today's date**. |
+| `cadence commit "message" --date YYYY-MM-DD` | Stage files & pre-label a commit for a **future date**. |
+| `cadence status` | Show current commit counts (Pushed vs. Pending vs. Scheduled vs. Unlabeled). |
+| `cadence push` | Manually execute push check to advance remote `origin/main` for eligible commits. |
+| `cadence relabel [HEAD|hash] YYYY-MM-DD` | Modify/fix the `Release-Date` trailer on an existing commit. |
+| `cadence log` | Display audit log of previous pushes. |
+| `cadence` | Launch the interactive Terminal Dashboard (TUI). |
+| `cadence <git-command>` | Passthrough standard git commands (e.g. `cadence diff`, `cadence status`, `cadence checkout`). |
+
+---
+
+## ⚙️ Configuration Files
+- `.cadence.json`: Local settings (remote name, branch, timezone).
+- `.cadence_log.json`: Push history audit log.
+- `.cadence_guide.md`: This reference file.
+"""
+    with open(".cadence_guide.md", "w", encoding="utf-8") as f:
+        f.write(guide_content)
+
     print("Cadence initialized successfully!")
     print(f"Created .cadence.json: {cfg}")
+    print("Created .cadence_guide.md for developer and AI guidance.")
+
 
 
 def print_status():
