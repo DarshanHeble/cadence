@@ -49,13 +49,14 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
                 .split(f.size());
 
             // Navigation Tabs
-            let titles = vec!["[1] Timeline", "[2] Today's Batch", "[3] Push Log", "[4] Settings"];
+            let titles = vec!["[Alt+1] Timeline", "[Alt+2] Today's Batch", "[Alt+3] Push Log", "[Alt+4] Settings"];
             let tabs = Tabs::new(titles)
                 .block(Block::default().borders(Borders::ALL).title(" Cadence Progress Pacer "))
                 .select(current_tab as usize)
                 .style(Style::default().fg(Color::Cyan))
                 .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
             f.render_widget(tabs, chunks[0]);
+
 
             // Content Body based on selected Tab
             match current_tab {
@@ -171,9 +172,10 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
             }
 
             // Footer Keybinding Legend
-            let footer_text = " [1-4 / Tab / ←→ / h/l] Switch Tabs | [p] Push Recheck | [q] Quit";
+            let footer_text = " [Alt+1..4 / 1..4 / Tab / ←→ / h/l] Switch Tabs | [p] Push Recheck | [q] Quit";
             let footer = Paragraph::new(footer_text).block(Block::default().borders(Borders::ALL));
             f.render_widget(footer, chunks[2]);
+
 
         })?;
 
