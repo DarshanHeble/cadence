@@ -34,6 +34,11 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
     let mut current_tab = TabIndex::Timeline;
     let mut push_result = initial_push_res;
 
+    // Cache config and commits in state to prevent slow sub-process calls during render frames
+    let mut cfg = load_config();
+    let mut today = get_today_str(&cfg.timezone);
+    let mut cached_commits = get_all_commits(&cfg.repo_path, &cfg.remote, &cfg.branch);
+
     loop {
         terminal.draw(|f| {
             let chunks = Layout::default()
@@ -49,27 +54,37 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
                 .split(f.size());
 
             // Navigation Tabs
-            let titles = vec!["[Alt+1] Timeline", "[Alt+2] Today's Batch", "[Alt+3] Push Log", "[Alt+4] Settings"];
+            let titles = vec![
+                "[Alt+1] Timeline",
+                "[Alt+2] Today's Batch",
+                "[Alt+3] Push Log",
+                "[Alt+4] Settings",
+            ];
             let tabs = Tabs::new(titles)
-                .block(Block::default().borders(Borders::ALL).title(" Cadence Progress Pacer "))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(" Cadence Progress Pacer "),
+                )
                 .select(current_tab as usize)
                 .style(Style::default().fg(Color::Cyan))
-                .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+                .highlight_style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                );
             f.render_widget(tabs, chunks[0]);
-
 
             // Content Body based on selected Tab
             match current_tab {
                 TabIndex::Timeline => {
-                    let cfg = load_config();
-                    let today = get_today_str(&cfg.timezone);
-                    let commits = get_all_commits(&cfg.repo_path, &cfg.remote, &cfg.branch);
-
                     let mut items = Vec::new();
-                    if commits.is_empty() {
+                    if cached_commits.is_empty() {
                         items.push(ListItem::new("No git commits found in this repository."));
                     } else {
-                        let has_unlabeled = commits.iter().any(|c| !c.pushed && c.release_date.is_none());
+                        let has_unlabeled = cached_commits
+                            .iter()
+                            .any(|c| !c.pushed && c.release_date.is_none());
                         if has_unlabeled {
                             items.push(ListItem::new(Span::styled(
                                 "⚠️ UNLABELED COMMITS FOUND: Queue is blocked until trailers are added!",
@@ -78,57 +93,98 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
                             items.push(ListItem::new(""));
                         }
 
-                        for c in commits {
+                        for c in &cached_commits {
                             let status_span = if c.pushed {
                                 Span::styled("■ Pushed", Style::default().fg(Color::Green))
                             } else if let Some(ref d) = c.release_date {
                                 if d <= &today {
-                                    Span::styled("□ Pending (Due)", Style::default().fg(Color::Yellow))
+                                    Span::styled(
+                                        "□ Pending (Due)",
+                                        Style::default().fg(Color::Yellow),
+                                    )
                                 } else {
-                                    Span::styled("□ Scheduled (Future)", Style::default().fg(Color::DarkGray))
+                                    Span::styled(
+                                        "□ Scheduled (Future)",
+                                        Style::default().fg(Color::DarkGray),
+                                    )
                                 }
                             } else {
                                 Span::styled("⚠️ Unlabeled", Style::default().fg(Color::Red))
                             };
 
-                            let date_str = c.release_date.unwrap_or_else(|| "MISSING".to_string());
+                            let date_str = c
+                                .release_date
+                                .as_deref()
+                                .unwrap_or("MISSING");
                             let line = Line::from(vec![
                                 status_span,
                                 Span::raw(format!(" [{}] {} ", c.short_hash, c.subject)),
-                                Span::styled(format!("({})", date_str), Style::default().fg(Color::Cyan)),
+                                Span::styled(
+                                    format!("({})", date_str),
+                                    Style::default().fg(Color::Cyan),
+                                ),
                             ]);
                             items.push(ListItem::new(line));
                         }
                     }
 
-                    let list = List::new(items).block(Block::default().borders(Borders::ALL).title(" Commit Pacing Timeline "));
+                    let list = List::new(items).block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(" Commit Pacing Timeline "),
+                    );
                     f.render_widget(list, chunks[1]);
                 }
                 TabIndex::Batch => {
                     let mut text = Vec::new();
-                    text.push(Line::from(Span::styled("Today's Batch & Launch Push Check", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))));
+                    text.push(Line::from(Span::styled(
+                        "Today's Batch & Launch Push Check",
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    )));
                     text.push(Line::from(""));
 
                     if push_result.pushed {
-                        text.push(Line::from(Span::styled(format!("✅ SUCCESS: {}", push_result.message), Style::default().fg(Color::Green))));
+                        text.push(Line::from(Span::styled(
+                            format!("✅ SUCCESS: {}", push_result.message),
+                            Style::default().fg(Color::Green),
+                        )));
                         text.push(Line::from("Pushed commits:"));
                         for c in &push_result.pushed_commits {
-                            text.push(Line::from(format!("  ✔ {} - {} ({})", c.short_hash, c.subject, c.release_date.as_deref().unwrap_or(""))));
+                            text.push(Line::from(format!(
+                                "  ✔ {} - {} ({})",
+                                c.short_hash,
+                                c.subject,
+                                c.release_date.as_deref().unwrap_or("")
+                            )));
                         }
                     } else {
-                        text.push(Line::from(Span::styled(format!("ℹ️ STATUS: {}", push_result.message), Style::default().fg(Color::Yellow))));
+                        text.push(Line::from(Span::styled(
+                            format!("ℹ️ STATUS: {}", push_result.message),
+                            Style::default().fg(Color::Yellow),
+                        )));
                     }
 
                     if push_result.unlabeled_found {
                         text.push(Line::from(""));
-                        text.push(Line::from(Span::styled("⚠️ Notice: Found unlabeled commit(s). Queue progression stopped.", Style::default().fg(Color::Red))));
+                        text.push(Line::from(Span::styled(
+                            "⚠️ Notice: Found unlabeled commit(s). Queue progression stopped.",
+                            Style::default().fg(Color::Red),
+                        )));
                     }
 
                     text.push(Line::from(""));
-                    text.push(Line::from(Span::styled("Press 'p' to recheck and push eligible commits now.", Style::default().fg(Color::Gray))));
+                    text.push(Line::from(Span::styled(
+                        "Press 'p' to recheck and push eligible commits now.",
+                        Style::default().fg(Color::Gray),
+                    )));
 
-
-                    let p = Paragraph::new(text).block(Block::default().borders(Borders::ALL).title(" Batch Push Result "));
+                    let p = Paragraph::new(text).block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(" Batch Push Result "),
+                    );
                     f.render_widget(p, chunks[1]);
                 }
                 TabIndex::Log => {
@@ -141,45 +197,64 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
                         for entry in logs.iter().rev() {
                             items.push(ListItem::new(Span::styled(
                                 format!("🚀 Push on {} ({} commits)", entry.timestamp, entry.count),
-                                Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+                                Style::default()
+                                    .fg(Color::Green)
+                                    .add_modifier(Modifier::BOLD),
                             )));
                             items.push(ListItem::new(format!("   {}", entry.message)));
                             for c in &entry.commits {
-                                items.push(ListItem::new(format!("     • {} - {}", c.short_hash, c.subject)));
+                                items.push(ListItem::new(format!(
+                                    "     • {} - {}",
+                                    c.short_hash, c.subject
+                                )));
                             }
                             items.push(ListItem::new(""));
                         }
                     }
 
-                    let list = List::new(items).block(Block::default().borders(Borders::ALL).title(" Push History Log "));
+                    let list = List::new(items).block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(" Push History Log "),
+                    );
                     f.render_widget(list, chunks[1]);
                 }
                 TabIndex::Settings => {
-                    let cfg = load_config();
                     let text = vec![
-                        Line::from(Span::styled("Cadence Configuration (.cadence.json)", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))),
+                        Line::from(Span::styled(
+                            "Cadence Configuration (.cadence.json)",
+                            Style::default()
+                                .fg(Color::Cyan)
+                                .add_modifier(Modifier::BOLD),
+                        )),
                         Line::from(""),
                         Line::from(format!("Repository Path: {}", cfg.repo_path)),
                         Line::from(format!("Remote Name:     {}", cfg.remote)),
                         Line::from(format!("Branch Name:     {}", cfg.branch)),
                         Line::from(format!("Timezone:        {}", cfg.timezone)),
                         Line::from(""),
-                        Line::from(Span::styled("Run 'cad init' to reconfigure settings interactively.", Style::default().fg(Color::DarkGray))),
+                        Line::from(Span::styled(
+                            "Run 'cad init' to reconfigure settings interactively.",
+                            Style::default().fg(Color::DarkGray),
+                        )),
                     ];
-                    let p = Paragraph::new(text).block(Block::default().borders(Borders::ALL).title(" Active Settings "));
+                    let p = Paragraph::new(text).block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(" Active Settings "),
+                    );
                     f.render_widget(p, chunks[1]);
                 }
             }
 
             // Footer Keybinding Legend
-            let footer_text = " [Alt+1..4 / 1..4 / Tab / ←→ / h/l] Switch Tabs | [p] Push Recheck | [q] Quit";
+            let footer_text =
+                " [Alt+1..4 / 1..4 / Tab / ←→ / h/l] Switch Tabs | [p] Push Recheck | [r] Refresh | [q] Quit";
             let footer = Paragraph::new(footer_text).block(Block::default().borders(Borders::ALL));
             f.render_widget(footer, chunks[2]);
-
-
         })?;
 
-        if event::poll(std::time::Duration::from_millis(50))? {
+        if event::poll(std::time::Duration::from_millis(16))? {
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => break,
@@ -203,6 +278,11 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
                             TabIndex::Settings => TabIndex::Log,
                         };
                     }
+                    KeyCode::Char('r') | KeyCode::Char('R') => {
+                        cfg = load_config();
+                        today = get_today_str(&cfg.timezone);
+                        cached_commits = get_all_commits(&cfg.repo_path, &cfg.remote, &cfg.branch);
+                    }
                     KeyCode::Char('p') | KeyCode::Char('P') => {
                         let res = run_push_check();
                         if res.pushed {
@@ -223,6 +303,7 @@ pub fn run_tui(initial_push_res: PushCheckResult) -> Result<(), Box<dyn std::err
                             append_push_log(entry);
                         }
                         push_result = res;
+                        cached_commits = get_all_commits(&cfg.repo_path, &cfg.remote, &cfg.branch);
                         current_tab = TabIndex::Batch;
                     }
                     _ => {}
