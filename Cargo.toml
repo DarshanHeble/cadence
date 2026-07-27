@@ -1,8 +1,15 @@
 [package]
 name = "cadence"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 edition = "2021"
-description = "Schedule git commits to appear as steady daily progress on GitHub"
+authors = ["Darshan Heble <darshanheble@github.com>"]
+description = "Automated Git progress pacing system written in Rust with TUI & CLI"
+readme = "README.md"
+repository = "https://github.com/DarshanHeble/cadence"
+license = "MIT OR Apache-2.0"
+keywords = ["git", "pacing", "tui", "cli", "github"]
+categories = ["command-line-utilities", "development-tools"]
+
 
 [[bin]]
 name = "cadence"
