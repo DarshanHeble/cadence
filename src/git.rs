@@ -246,3 +246,39 @@ pub fn run_push_check(skip_fetch: bool) -> PushCheckResult {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_release_date_valid() {
+        let msg = "feat: Add authentication module\n\nRelease-Date: 2026-08-05";
+        assert_eq!(parse_release_date(msg), Some("2026-08-05".to_string()));
+    }
+
+    #[test]
+    fn test_parse_release_date_case_insensitive() {
+        let msg = "fix: Update docs\n\nrelease-date: 2026-12-31";
+        assert_eq!(parse_release_date(msg), Some("2026-12-31".to_string()));
+    }
+
+    #[test]
+    fn test_parse_release_date_missing() {
+        let msg = "docs: Update README file";
+        assert_eq!(parse_release_date(msg), None);
+    }
+
+    #[test]
+    fn test_get_today_str_valid_tz() {
+        let today = get_today_str("Asia/Kolkata");
+        assert_eq!(today.len(), 10); // YYYY-MM-DD format check
+        assert!(today.contains('-'));
+    }
+
+    #[test]
+    fn test_get_today_str_invalid_tz_fallback() {
+        let today = get_today_str("Invalid/Timezone");
+        assert_eq!(today.len(), 10);
+    }
+}

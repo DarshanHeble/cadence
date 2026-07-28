@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="100%" stop-color="#050810"/>
+    </linearGradient>
+
+    <!-- Colors -->
+    <!-- Electric Cyan -->
+    <linearGradient id="cyanColor" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#00D2FE"/>
+    </linearGradient>
+
+    <!-- Rust Orange -->
+    <linearGradient id="orangeColor" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B35"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Container Box -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad)"/>
+  
+  <!-- Outer Frame -->
+  <rect x="20" y="20" width="472" height="472" rx="76" fill="none" stroke="url(#cyanColor)" stroke-opacity="0.12" stroke-width="2"/>
+
+  <g id="logoMark">
+    <!-- Equalizer Vertical Capsule Bars forming the 'C' body -->
+    <!-- Column 1 (Leftmost outer) -->
+    <rect x="112" y="210" width="14" height="92" rx="7" fill="url(#cyanColor)"/>
+
+    <!-- Column 2 -->
+    <rect x="131" y="180" width="14" height="152" rx="7" fill="url(#cyanColor)"/>
+
+    <!-- Column 3 -->
+    <rect x="150" y="150" width="14" height="212" rx="7" fill="url(#cyanColor)"/>
+
+    <!-- Column 4 -->
+    <rect x="169" y="128" width="14" height="254" rx="7" fill="url(#cyanColor)"/>
+
+    <!-- Column 5 -->
+    <rect x="188" y="112" width="14" height="286" rx="7" fill="url(#orangeColor)"/>
+
+    <!-- Column 6 (Split top & bottom) -->
+    <rect x="207" y="104" width="14" height="74" rx="7" fill="url(#orangeColor)"/>
+    <rect x="207" y="260" width="14" height="142" rx="7" fill="url(#orangeColor)"/>
+
+    <!-- Column 7 -->
+    <rect x="226" y="108" width="14" height="46" rx="7" fill="url(#cyanColor)"/>
+    <rect x="226" y="275" width="14" height="122" rx="7" fill="url(#cyanColor)"/>
+
+    <!-- Column 8 -->
+    <rect x="245" y="116" width="14" height="56" rx="7" fill="url(#orangeColor)"/>
+    <rect x="245" y="288" width="14" height="92" rx="7" fill="url(#orangeColor)"/>
+
+    <!-- Column 9 -->
+    <rect x="264" y="128" width="14" height="46" rx="7" fill="url(#cyanColor)"/>
+    <rect x="264" y="298" width="14" height="70" rx="7" fill="url(#cyanColor)"/>
+
+    <!-- Column 10 -->
+    <rect x="283" y="298" width="14" height="60" rx="7" fill="url(#orangeColor)"/>
+
+    <!-- Column 11 -->
+    <rect x="302" y="294" width="14" height="52" rx="7" fill="url(#cyanColor)"/>
+
+    <!-- Column 12 -->
+    <rect x="321" y="286" width="14" height="56" rx="7" fill="url(#orangeColor)"/>
+
+    <!-- Column 13 -->
+    <rect x="340" y="274" width="14" height="58" rx="7" fill="url(#orangeColor)"/>
+
+    <!-- Column 14 -->
+    <rect x="359" y="260" width="14" height="58" rx="7" fill="url(#cyanColor)"/>
+
+    <!-- Column 15 -->
+    <rect x="378" y="246" width="14" height="54" rx="7" fill="url(#orangeColor)"/>
+
+    <!-- Bottom Horizontal Connecting Bridge Bar -->
+    <rect x="248" y="342" width="76" height="14" rx="7" fill="url(#orangeColor)"/>
+
+    <!-- Top Right Git Tree Extension (Matching the image's Git branch graph) -->
+    <!-- Top Branch (Cyan) -->
+    <path d="M 252,118 L 292,118 L 342,154 L 382,184" fill="none" stroke="#38BDF8" stroke-width="7" stroke-linecap="round"/>
+
+    <!-- Middle Branch (Orange) -->
+    <path d="M 252,145 L 285,145 L 335,185 L 368,212" fill="none" stroke="#FF6B35" stroke-width="7" stroke-linecap="round"/>
+
+    <!-- Bottom Branch (Cyan) -->
+    <path d="M 252,172 L 278,172 L 322,216 L 350,238" fill="none" stroke="#38BDF8" stroke-width="7" stroke-linecap="round"/>
+
+    <!-- Cross Branch Connections -->
+    <line x1="292" y1="118" x2="285" y2="145" stroke="#FF6B35" stroke-width="5"/>
+    <line x1="342" y1="154" x2="335" y2="185" stroke="#38BDF8" stroke-width="5"/>
+    <line x1="285" y1="145" x2="278" y2="172" stroke="#38BDF8" stroke-width="5"/>
+    <line x1="335" y1="185" x2="322" y2="216" stroke="#FF6B35" stroke-width="5"/>
+
+    <!-- Git Commit Nodes (Circles matching image) -->
+    <!-- Top Branch Nodes -->
+    <circle cx="252" cy="118" r="8" fill="#38BDF8"/>
+    <circle cx="292" cy="118" r="8" fill="#38BDF8"/>
+    <circle cx="342" cy="154" r="8" fill="#38BDF8"/>
+    <circle cx="382" cy="184" r="8" fill="#FF6B35"/>
+
+    <!-- Middle Branch Nodes -->
+    <circle cx="252" cy="145" r="8" fill="#FF6B35"/>
+    <circle cx="285" cy="145" r="8" fill="#FF6B35"/>
+    <circle cx="335" cy="185" r="8" fill="#FF6B35"/>
+    <circle cx="368" cy="212" r="8" fill="#38BDF8"/>
+
+    <!-- Bottom Branch Nodes -->
+    <circle cx="252" cy="172" r="8" fill="#38BDF8"/>
+    <circle cx="278" cy="172" r="8" fill="#FF6B35"/>
+    <circle cx="322" cy="216" r="8" fill="#FF6B35"/>
+    <circle cx="350" cy="238" r="8" fill="#FF6B35"/>
+  </g>
+</svg>

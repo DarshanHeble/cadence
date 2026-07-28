@@ -81,3 +81,49 @@ pub fn append_push_log(entry: LogEntry) {
         let _ = fs::write(PUSH_LOG_FILE, content);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config() {
+        let cfg = Config::default();
+        assert_eq!(cfg.repo_path, ".");
+        assert_eq!(cfg.remote, "origin");
+        assert_eq!(cfg.branch, "main");
+        assert_eq!(cfg.timezone, "Asia/Kolkata");
+    }
+
+    #[test]
+    fn test_config_json_roundtrip() {
+        let cfg = Config {
+            repo_path: "/path/to/repo".to_string(),
+            remote: "upstream".to_string(),
+            branch: "master".to_string(),
+            timezone: "UTC".to_string(),
+        };
+
+        let json = serde_json::to_string(&cfg).expect("Serialization failed");
+        let decoded: Config = serde_json::from_str(&json).expect("Deserialization failed");
+        assert_eq!(cfg, decoded);
+    }
+
+    #[test]
+    fn test_log_entry_roundtrip() {
+        let entry = LogEntry {
+            timestamp: "2026-07-28T12:00:00Z".to_string(),
+            message: "Successfully pushed 1 commit".to_string(),
+            count: 1,
+            commits: vec![LogCommit {
+                short_hash: "abc1234".to_string(),
+                subject: "Test commit".to_string(),
+                release_date: "2026-07-28".to_string(),
+            }],
+        };
+
+        let json = serde_json::to_string(&entry).expect("Serialization failed");
+        let decoded: LogEntry = serde_json::from_str(&json).expect("Deserialization failed");
+        assert_eq!(entry, decoded);
+    }
+}

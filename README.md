@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="Cadence Logo" width="160" height="160" />
+</p>
+
 # ⏱️ Cadence (`cad`) `v0.1.0-beta.1`
 
 [![CI & Release Pipeline](https://github.com/DarshanHeble/cadence/actions/workflows/ci.yml/badge.svg)](https://github.com/DarshanHeble/cadence/actions/workflows/ci.yml)
